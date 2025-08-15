@@ -47,6 +47,9 @@ public static class OpenTelemetryExtensions
                     .AddSource("Microsoft.Orleans")
                     .AddSource("Aevatar.CQRS")
                     .AddSource("LatencyBenchmark.Root")
+                    .AddSource("Orleans.EventSourcing")          // Our added Orleans event sourcing tracing
+                    .AddSource("Orleans.Core.BatchWorker")       // Our added Orleans batch worker tracing
+                    .AddSource("Aevatar.MethodTracing")
                     .AddSource("LatencyPublisherAgent")
                     .AddSource("LatencyBenchmark.Handler")
                     .AddSource("Aevatar.Core.GAgent")

@@ -45,6 +45,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\..\signalR\src\Aevatar.SignalR\Aevatar.SignalR.csproj" />
+    <ProjectReference Include="..\..\..\framework\src\Aevatar.Core\Aevatar.Core.csproj" />
     <ProjectReference Include="..\Aevatar.Application\Aevatar.Application.csproj" />
     <ProjectReference Include="..\Aevatar.HttpApi.Admin\Aevatar.HttpApi.Admin.csproj" />
     <ProjectReference Include="..\Aevatar.MongoDB\Aevatar.MongoDB.csproj" />

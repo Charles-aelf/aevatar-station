@@ -17,7 +17,9 @@
     </PropertyGroup>
     
     <ItemGroup>
-        <PackageReference Include="Microsoft.Orleans.EventSourcing" />
+        <ProjectReference Include="../../../../aevatarAI/orleans/src/Orleans.EventSourcing/Orleans.EventSourcing.csproj" />
+
+        <!-- <PackageReference Include="Microsoft.Orleans.EventSourcing" /> -->
         <PackageReference Include="Microsoft.Orleans.Streaming" />
         <PackageReference Include="Orleans.Streams.Kafka" />
         <PackageReference Include="Microsoft.Extensions.DependencyInjection" />
@@ -25,6 +27,7 @@
         <PackageReference Include="Microsoft.Extensions.Logging" />
         <PackageReference Include="Microsoft.Extensions.Options" />
         <PackageReference Include="AElf.OpenTelemetry" />
+        <PackageReference Include="Castle.Core" />
     </ItemGroup>
 
     <ItemGroup>

@@ -8,6 +8,7 @@ using Orleans.Concurrency;
 using System.Diagnostics;
 using System.Collections.Concurrent;
 using Orleans;
+using Aevatar.Core.Tracing;
 
 namespace E2E.Grains;
 
@@ -108,7 +109,7 @@ public class LatencyPublisherAgent : GAgentBase<LatencyPublisherState, LatencyPu
     {
         return Task.FromResult("Latency test publisher agent");
     }
-
+    //[Trace("GAgentTransitionState", CaptureParameters = true, CaptureReturnValue = true)]
     protected override void GAgentTransitionState(LatencyPublisherState state, StateLogEventBase<LatencyPublisherStateLogEvent> @event)
     {
         switch (@event)
@@ -118,7 +119,8 @@ public class LatencyPublisherAgent : GAgentBase<LatencyPublisherState, LatencyPu
                 break;
         }
     }
-
+    
+    //[Trace("ProcessMessage", CaptureParameters = true, CaptureReturnValue = true)]
     public async Task PublishEventAsync(LatencyTestEvent @event, Guid targetHandlerStreamId)
     {
         using var activity = ActivitySource.StartActivity("PublishEvent", ActivityKind.Producer);
@@ -151,11 +153,13 @@ public class LatencyPublisherAgent : GAgentBase<LatencyPublisherState, LatencyPu
         }
     }
 
+    //[Trace("GetEventsSentAsync", CaptureParameters = true, CaptureReturnValue = true)]
     public Task<long> GetEventsSentAsync()
     {
         return Task.FromResult(State.EventsSent);
     }
 
+    //[Trace("ResetMetricsAsync", CaptureParameters = true, CaptureReturnValue = true)]
     public async Task ResetMetricsAsync()
     {
         RaiseEvent(new LatencyPublisherStateLogEvent { EventsSent = 0 });
@@ -176,11 +180,14 @@ public class LatencyHandlerAgent : GAgentBase<LatencyHandlerState, LatencyHandle
     
     private readonly ConcurrentDictionary<string, LatencyMeasurement> _latencyMeasurements = new();
 
+    //[Trace("GetDescriptionAsync", CaptureParameters = true, CaptureReturnValue = true)]
+
     public override Task<string> GetDescriptionAsync()
     {
         return Task.FromResult("Latency test handler agent");
     }
 
+    //[Trace("GAgentTransitionState", CaptureParameters = true, CaptureReturnValue = true)]
     protected override void GAgentTransitionState(LatencyHandlerState state, StateLogEventBase<LatencyHandlerStateLogEvent> @event)
     {
         switch (@event)
@@ -191,6 +198,7 @@ public class LatencyHandlerAgent : GAgentBase<LatencyHandlerState, LatencyHandle
         }
     }
 
+    //[Trace("StartListeningAsync", CaptureParameters = true, CaptureReturnValue = true)]
     public async Task StartListeningAsync(Guid streamId)
     {
         try
@@ -214,12 +222,14 @@ public class LatencyHandlerAgent : GAgentBase<LatencyHandlerState, LatencyHandle
         }
     }
 
+    //[Trace("StopListeningAsync", CaptureParameters = true, CaptureReturnValue = true)]
     public async Task StopListeningAsync()
     {
         Logger.LogInformation("🛑 LatencyHandlerAgent {AgentId} stopping listeners", this.GetPrimaryKey());
         await Task.CompletedTask;
     }
 
+    //[Trace("OnLatencyTestEvent", CaptureParameters = true, CaptureReturnValue = true)]
     [EventHandler]
     public async Task OnLatencyTestEvent(LatencyTestEvent @event)
     {
@@ -278,6 +288,7 @@ public class LatencyHandlerAgent : GAgentBase<LatencyHandlerState, LatencyHandle
         }
     }
 
+    //[Trace("GetLatencyMetricsAsync", CaptureParameters = true, CaptureReturnValue = true)]
     public Task<LatencyMetrics> GetLatencyMetricsAsync()
     {
         var measurements = _latencyMeasurements.Values.ToList();
@@ -286,6 +297,7 @@ public class LatencyHandlerAgent : GAgentBase<LatencyHandlerState, LatencyHandle
         return Task.FromResult(metrics);
     }
 
+    //[Trace("ResetMetricsAsync", CaptureParameters = true, CaptureReturnValue = true)]
     public async Task ResetMetricsAsync()
     {
         _latencyMeasurements.Clear();
