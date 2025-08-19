@@ -33,6 +33,7 @@ using Orleans.Streaming;
 using Orleans.Streams;
 using Orleans.Hosting;
 using Aevatar.Core.Streaming.Extensions;
+using Aevatar.Core.Tracing; // This makes the extension methods available
 
 namespace Aevatar.Silo.Extensions;
 
@@ -134,6 +135,7 @@ public static class OrleansHostExtension
                 var zookeeperConnectionString = zookeeperSection.GetValue<string>("ConnectionString");
                 
                 siloBuilder
+                    .AddMethodTracing() // Add DynamicProxy tracing support
                     .ConfigureEndpoints(advertisedIP: IPAddress.Parse(advertisedIP),
                         siloPort: siloPort,
                         gatewayPort: gatewayPort,

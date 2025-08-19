@@ -3,6 +3,8 @@ using Orleans.Hosting;
 using Aevatar.Silo.Tracing;
 using Aevatar.Core.Tracing;
 using Aevatar.Core.Abstractions.Tracing;
+using Castle.DynamicProxy;
+using Aevatar.Core.Tracing; // This makes the extension methods available
 
 namespace Aevatar.Silo.Extensions;
 
@@ -30,6 +32,22 @@ public static class TracingExtensions
                 // Register grain call filters as singletons for performance
                 services.AddSingleton<TraceIncomingGrainCallFilter>();
                 services.AddSingleton<TraceOutgoingGrainCallFilter>();
+                
+                // Register Castle DynamicProxy components for service interception
+                services.AddSingleton<Castle.DynamicProxy.ProxyGenerator>();
+                
+                // Add framework tracing services
+                services.AddTracing(cfg =>
+                {
+                    cfg.Enabled = true;
+                    cfg.SamplingRate = 1.0;
+                    cfg.TrackedIds = new HashSet<string> { "orleans-trace" };
+                });
+                
+                // Register the DynamicProxy service registration methods
+                services.AddSingleton<Castle.DynamicProxy.ProxyGenerator>();
+                
+                // Now the services.AddProxiedScoped<TService, TImplementation>() methods will work
             });
     }
 

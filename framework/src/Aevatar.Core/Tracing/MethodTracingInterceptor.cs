@@ -5,16 +5,23 @@ using System.Linq;
 using System.Reflection;
 using System.Text.Json;
 using System.Threading.Tasks;
+using Microsoft.Extensions.Logging;
 
 namespace Aevatar.Core.Tracing;
 
-/// <summary>
-/// Castle DynamicProxy interceptor that provides method-level tracing.
-/// Automatically traces methods decorated with TraceAttribute when tracing is enabled.
-/// </summary>
-public class MethodTracingInterceptor : IInterceptor
-{
-    private static readonly ActivitySource ActivitySource = new("Aevatar.MethodTracing");
+    /// <summary>
+    /// Castle DynamicProxy interceptor that provides method-level tracing.
+    /// Automatically traces methods decorated with TraceAttribute when tracing is enabled.
+    /// </summary>
+    public class MethodTracingInterceptor : IInterceptor
+    {
+        private static readonly ActivitySource ActivitySource = new("Aevatar.MethodTracing");
+        private readonly ILogger<MethodTracingInterceptor> _logger;
+
+        public MethodTracingInterceptor(ILogger<MethodTracingInterceptor> logger)
+        {
+            _logger = logger;
+        }
 
     /// <summary>
     /// Intercepts method calls and applies tracing if conditions are met.
@@ -22,11 +29,25 @@ public class MethodTracingInterceptor : IInterceptor
     /// <param name="invocation">The method invocation details.</param>
     public void Intercept(IInvocation invocation)
     {
+        _logger.LogDebug("[INTERCEPT] Method called: {TargetType}.{MethodName}", 
+            invocation.TargetType?.Name, invocation.Method.Name);
+        
         var traceAttribute = GetTraceAttribute(invocation.Method);
+        
+        if (traceAttribute != null)
+        {
+            _logger.LogDebug("[INTERCEPT] Found TraceAttribute: {OperationName}", 
+                traceAttribute.OperationName ?? invocation.Method.Name);
+        }
+        else
+        {
+            _logger.LogDebug("[INTERCEPT] No TraceAttribute found");
+        }
         
         // If method is not marked for tracing, proceed normally
         if (traceAttribute == null)
         {
+            _logger.LogDebug("[INTERCEPT] Proceeding without tracing");
             invocation.Proceed();
             return;
         }
@@ -34,9 +55,13 @@ public class MethodTracingInterceptor : IInterceptor
         // If tracing is not enabled for current context, proceed normally
         if (!TraceContext.IsTracingEnabled)
         {
+            _logger.LogDebug("[INTERCEPT] Tracing disabled, proceeding without tracing");
             invocation.Proceed();
             return;
         }
+
+        _logger.LogDebug("[INTERCEPT] Starting traced execution for {OperationName}", 
+            traceAttribute.OperationName ?? invocation.Method.Name);
 
         // Perform traced execution
         if (IsAsync(invocation.Method))
@@ -62,10 +87,22 @@ public class MethodTracingInterceptor : IInterceptor
             {
                 CaptureReturnValue(activity, invocation.ReturnValue, traceAttribute.MaxCaptureSize);
             }
+            
+            // Log when activity completes successfully
+            if (activity != null)
+            {
+                _logger.LogInformation("[TRACING] Completed OpenTelemetry activity: {OperationName} for {TargetType}.{MethodName}", 
+                    activity.OperationName, invocation.TargetType?.Name, invocation.Method.Name);
+            }
         }
         catch (Exception ex)
         {
             CaptureException(activity, ex);
+            if (activity != null)
+            {
+                _logger.LogError(ex, "[TRACING] Failed OpenTelemetry activity: {OperationName} for {TargetType}.{MethodName}", 
+                    activity.OperationName, invocation.TargetType?.Name, invocation.Method.Name);
+            }
             throw;
         }
     }
@@ -101,10 +138,22 @@ public class MethodTracingInterceptor : IInterceptor
                     }
                 }
             }
+            
+            // Log when activity completes successfully
+            if (activity != null)
+            {
+                _logger.LogInformation("[TRACING] Completed OpenTelemetry activity: {OperationName} for {TargetType}.{MethodName}", 
+                    activity.OperationName, invocation.TargetType?.Name, invocation.Method.Name);
+            }
         }
         catch (Exception ex)
         {
             CaptureException(activity, ex);
+            if (activity != null)
+            {
+                _logger.LogError(ex, "[TRACING] Failed OpenTelemetry activity: {OperationName} for {TargetType}.{MethodName}", 
+                    activity.OperationName, invocation.TargetType?.Name, invocation.Method.Name);
+            }
             throw;
         }
     }
@@ -115,6 +164,9 @@ public class MethodTracingInterceptor : IInterceptor
         
         if (activity == null)
             return null;
+
+        _logger.LogDebug("[TRACING] Created OpenTelemetry activity: {OperationName} for {TargetType}.{MethodName}", 
+            activity.OperationName, invocation.TargetType?.Name, invocation.Method.Name);
 
         // Add basic tags
         activity.SetTag("method.class", invocation.TargetType?.Name ?? "Unknown");
@@ -215,9 +267,40 @@ public class MethodTracingInterceptor : IInterceptor
         }
     }
 
-    private static TraceAttribute? GetTraceAttribute(MethodInfo method)
+    private TraceAttribute? GetTraceAttribute(MethodInfo method)
     {
-        return method.GetCustomAttribute<TraceAttribute>();
+        _logger.LogDebug("[ATTR] Checking for TraceAttribute on method {MethodName}", method.Name);
+        _logger.LogDebug("[ATTR] Method declaring type: {DeclaringType}", method.DeclaringType?.Name ?? "Unknown");
+        _logger.LogDebug("[ATTR] Method type: {MethodType}", method.GetType().Name);
+        
+        // Log ALL attributes on the method to see what we actually have
+        var allAttributes = method.GetCustomAttributes();
+        _logger.LogDebug("[ATTR] All attributes on method {MethodName}: {AttributeCount}", method.Name, allAttributes.Count());
+        foreach (var attr in allAttributes)
+        {
+            _logger.LogDebug("[ATTR] Found attribute: {AttributeType} on {MethodName}", attr.GetType().Name, method.Name);
+        }
+        
+        // Direct attribute lookup on the method
+        var methodAttribute = method.GetCustomAttribute<TraceAttribute>();
+        if (methodAttribute != null)
+        {
+            _logger.LogDebug("[ATTR] Found TraceAttribute on method {MethodName}: {OperationName}", 
+                method.Name, methodAttribute.OperationName ?? method.Name);
+            return methodAttribute;
+        }
+
+        // Check class-level attribute if method-level not found
+        var classAttribute = method.DeclaringType?.GetCustomAttribute<TraceAttribute>();
+        if (classAttribute != null)
+        {
+            _logger.LogDebug("[ATTR] Found TraceAttribute on class {ClassType}: {OperationName}", 
+                method.DeclaringType?.Name, classAttribute.OperationName ?? method.Name);
+            return classAttribute;
+        }
+        
+        _logger.LogDebug("[ATTR] No TraceAttribute found for method {MethodName}", method.Name);
+        return null;
     }
 
     private static bool IsAsync(MethodInfo method)
