@@ -68,7 +68,8 @@ public class AevatarAccountEmailer : IAevatarAccountEmailer, ITransientDependenc
 
     public async Task SendPasswordResetLinkAsync(IdentityUser user, string resetToken)
     {
-        var url = _accountOptions.ResetPasswordUrl;
+        // var url = _accountOptions.ResetPasswordUrl;
+        var url = "http://localhost:7002/reset-password";
         var link = $"{url}?userId={user.Id}&resetToken={UrlEncoder.Default.Encode(resetToken)}";
 
         var emailContent = await _templateRenderer.RenderAsync(

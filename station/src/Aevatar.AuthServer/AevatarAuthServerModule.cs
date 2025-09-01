@@ -32,6 +32,7 @@ using Volo.Abp.PermissionManagement;
 using Volo.Abp.PermissionManagement.MongoDB;
 using Volo.Abp.UI.Navigation.Urls;
 using StackExchange.Redis;
+using OpenIddict.Abstractions;
 
 namespace Aevatar.AuthServer;
 
@@ -106,15 +107,20 @@ public class AevatarAuthServerModule : AbpModule
             });
         });
 
-        //add signature grant type
+        //add custom grant types and enable standard OAuth flows
         PreConfigure<OpenIddictServerBuilder>(builder =>
         {
             builder.Configure(openIddictServerOptions =>
             {
+                // Add custom grant types
                 openIddictServerOptions.GrantTypes.Add(GrantTypeConstants.SIGNATURE);
                 openIddictServerOptions.GrantTypes.Add(GrantTypeConstants.GOOGLE);
                 openIddictServerOptions.GrantTypes.Add(GrantTypeConstants.APPLE);
                 openIddictServerOptions.GrantTypes.Add(GrantTypeConstants.Github);
+                
+                // Enable standard OAuth 2.0 grant types
+                openIddictServerOptions.GrantTypes.Add(OpenIddictConstants.GrantTypes.Password);
+                openIddictServerOptions.GrantTypes.Add(OpenIddictConstants.GrantTypes.RefreshToken);
             });
         });
     }
