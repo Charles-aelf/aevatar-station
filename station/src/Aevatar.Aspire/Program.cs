@@ -157,17 +157,17 @@ public class Program
             .WithHttpEndpoint(port: 7001, name: "authserver-http");
 
         // Create core silos (non-User types)
-        var siloScheduler = CreateSilo(
-            builder,
-            projectName: "siloScheduler", 
-            siloNamePattern: "Scheduler",
-            ip: "127.0.0.2",
-            siloPort: 11111,
-            gatewayPort: 30000,
-            dashboardPort: 8080,
-            healthCheckPort:10081
-        );
-        await Task.Delay(1000); // Wait for 1 second to ensure the silo is up and running
+        // var siloScheduler = CreateSilo(
+        //     builder,
+        //     projectName: "siloScheduler", 
+        //     siloNamePattern: "Scheduler",
+        //     ip: "127.0.0.2",
+        //     siloPort: 11111,
+        //     gatewayPort: 30000,
+        //     dashboardPort: 8080,
+        //     healthCheckPort:10081
+        // );
+        // await Task.Delay(1000); // Wait for 1 second to ensure the silo is up and running
 
         var siloProject = CreateSilo(
             builder,
@@ -181,42 +181,42 @@ public class Program
         );
         await Task.Delay(1000); // Wait for 1 second to ensure the silo is up and running
 
-        // Create User type silos in a loop
-        var userSiloConfigs = new[]
-        {
-            new { Name = "siloUser1", IP = "127.0.0.4", SiloPort = 11113, GatewayPort = 30002, DashboardPort = 8082,HealthCheckPort = 10083 },
-            // new { Name = "siloUser2", IP = "127.0.0.5", SiloPort = 11114, GatewayPort = 30003, DashboardPort = 8083 },
-            // new { Name = "siloUser3", IP = "127.0.0.6", SiloPort = 11115, GatewayPort = 30004, DashboardPort = 8084 }
-        };
+        // // Create User type silos in a loop
+        // var userSiloConfigs = new[]
+        // {
+        //     new { Name = "siloUser1", IP = "127.0.0.4", SiloPort = 11113, GatewayPort = 30002, DashboardPort = 8082,HealthCheckPort = 10083 },
+        //     // new { Name = "siloUser2", IP = "127.0.0.5", SiloPort = 11114, GatewayPort = 30003, DashboardPort = 8083 },
+        //     // new { Name = "siloUser3", IP = "127.0.0.6", SiloPort = 11115, GatewayPort = 30004, DashboardPort = 8084 }
+        // };
 
-        var userSilos = new List<IResourceBuilder<ProjectResource>>();
-        foreach (var config in userSiloConfigs)
-        {
-            var userSilo = CreateSilo(
-                builder,
-                projectName: config.Name,
-                siloNamePattern: "User",
-                ip: config.IP,
-                siloPort: config.SiloPort,
-                gatewayPort: config.GatewayPort,
-                dashboardPort: config.DashboardPort,
-                healthCheckPort:config.HealthCheckPort
-            );
-            userSilos.Add(userSilo);
-            await Task.Delay(1000); // Wait for 1 second to ensure the silo is up and running
-        }
+        // var userSilos = new List<IResourceBuilder<ProjectResource>>();
+        // foreach (var config in userSiloConfigs)
+        // {
+        //     var userSilo = CreateSilo(
+        //         builder,
+        //         projectName: config.Name,
+        //         siloNamePattern: "User",
+        //         ip: config.IP,
+        //         siloPort: config.SiloPort,
+        //         gatewayPort: config.GatewayPort,
+        //         dashboardPort: config.DashboardPort,
+        //         healthCheckPort:config.HealthCheckPort
+        //     );
+        //     userSilos.Add(userSilo);
+        //     await Task.Delay(1000); // Wait for 1 second to ensure the silo is up and running
+        // }
 
 // Add Aevatar.HttpApi.Host project with its dependencies
         var httpApiHost = builder.AddProject("httpapi", "../Aevatar.HttpApi.Host/Aevatar.HttpApi.Host.csproj")
             // .WithReference(mongodb)
             // .WithReference(elasticsearch)
             // .WithReference(authServer)
-            .WithReference(siloScheduler)
+            .WithReference(siloProject)
             // Wait for dependencies
             // .WaitFor(mongodb)
             // .WaitFor(elasticsearch)
             // .WaitFor(authServer)
-            .WaitFor(siloScheduler)
+            .WaitFor(siloProject)
             // Setting environment variables individually
             .WithEnvironment("ASPNETCORE_ENVIRONMENT", "Development")
             // .WithEnvironment("ConnectionStrings__Default", mongodbConnections)
@@ -261,9 +261,9 @@ public class Program
 // Add Aevatar.Worker project with its dependencies
         var worker = builder.AddProject("worker", "../Aevatar.Worker/Aevatar.Worker.csproj")
             // .WithReference(mongodb)
-            .WithReference(siloScheduler)
+            .WithReference(siloProject)
             // .WaitFor(mongodb)
-            .WaitFor(siloScheduler)
+            .WaitFor(siloProject)
             .WithEnvironment("MongoDB__ConnectionString", "{mongodb.connectionString}")
             .WithEnvironment("ASPNETCORE_ENVIRONMENT", "Development")
             // .WithEnvironment("ConnectionStrings__Default", mongodbConnections)
